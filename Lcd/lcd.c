@@ -213,12 +213,12 @@ void LCD_DrawChar(uint8_t Xpos, uint16_t Ypos, const uint16_t *c)
             if ((c[index] & (1 << i)) == 0x00)
             {
                 //LCD_WriteRAM(BackColor);
-                LCD_SetPoint(Xpos + index, Ypos + i, BackColor);
+                LCD_SetPoint(Xpos + 23 - index, Ypos + 16 - i, BackColor);
             }
             else
             {
                 //LCD_WriteRAM(TextColor);
-                LCD_SetPoint(Xpos + index, Ypos + i, TextColor);
+                LCD_SetPoint(Xpos + 23 - index, Ypos + 16 - i, TextColor);
             }
         }
     }
@@ -250,15 +250,15 @@ void LCD_DisplayChar(uint8_t Line, uint16_t Column, uint8_t Ascii)
 void LCD_DisplayStringLine(uint8_t Line, uint8_t *ptr)
 {
     uint32_t i = 0;
-    uint16_t refcolumn = 0;
+    uint16_t refcolumn = 319-16;
 
     /* Send the string character by character on lCD */
     while ((*ptr != 0) & (i < 40))
     {
         /* Display one character on LCD */
-        LCD_DisplayChar(Line, refcolumn, *ptr);
+        LCD_DisplayChar(239-24-Line, refcolumn, *ptr);
         /* Decrement the column position by 16 */
-        refcolumn += 16;
+        refcolumn -= 16;
         /* Point on the next character */
         ptr++;
         /* Increment the character counter */
@@ -277,16 +277,16 @@ void LCD_DisplayStringLine(uint8_t Line, uint8_t *ptr)
 void LCD_DisplayStringLineColumn(uint8_t Line, uint8_t column, uint8_t *ptr, uint8_t size)
 {
     uint32_t i = 0;
-    uint16_t refcolumn = column*16;
+    uint16_t refcolumn = 319-16 - column*16;
     uint8_t sizeCounter = 0;
 
     /* Send the string character by character on lCD */
     while (((*ptr != 0) & (i < 40)) && sizeCounter < size)
     {
         /* Display one character on LCD */
-        LCD_DisplayChar(Line, refcolumn, *ptr);
+        LCD_DisplayChar(239 - 24 - Line, refcolumn, *ptr);
         /* Decrement the column position by 16 */
-        refcolumn += 16;
+        refcolumn -= 16;
         /* Point on the next character */
         ptr++;
         /* Increment the character counter */

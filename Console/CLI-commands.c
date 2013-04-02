@@ -529,18 +529,28 @@ portBASE_TYPE prvSDIOCommand(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
     portBASE_TYPE xReturn = pdFALSE;
     char * pcParameterString;
     char cmd[20];
-    static char filename[20];
-    char buffer[1024];
+    static XCHAR filename[20];
+    char buffer[100];
     portBASE_TYPE xParameterStringLength = 0;
     static portBASE_TYPE xParameterNumber = 0;
     static FATFS fs;
     static FIL file;
+    static DIR dir;
     FRESULT res;
     UINT byteRead = 0;
+    char * path = "/";
+    FILINFO fno;
+    int i;
+    char *fn;   /* This function is assuming non-Unicode cfg. */
+#if _USE_LFN
+    static char lfn[_MAX_LFN + 1];
+    fno.lfname = lfn;
+    fno.lfsize = sizeof lfn;
+#endif
 
     memset(cmd, 0x00, 20);
     memset(pcWriteBuffer, 0x00, configCOMMAND_INT_MAX_OUTPUT_SIZE);
-    memset(buffer, 0x00, 1024);
+    memset(buffer, 0x00, 100);
     memset(filename, 0x00, 20);
 
     //if (0 == xParameterNumber)
@@ -561,7 +571,7 @@ portBASE_TYPE prvSDIOCommand(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
 
         // Get file name
         xParameterNumber++;
-        pcParameterString = (int8_t *) FreeRTOS_CLIGetParameter(pcCommandString, /* The command string itself. */
+        pcParameterString = (XCHAR *) FreeRTOS_CLIGetParameter(pcCommandString, /* The command string itself. */
         xParameterNumber, /* Return the next parameter. */
         &xParameterStringLength /* Store the parameter string length. */
         );
@@ -576,7 +586,7 @@ portBASE_TYPE prvSDIOCommand(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
         }
         else
         {
-            f_read(&file, buffer, 1024, &byteRead);
+            f_read(&file, buffer, 100, &byteRead);
             memcpy(pcWriteBuffer, buffer, strlen(buffer));
             f_close(&file);
         }
@@ -585,7 +595,7 @@ portBASE_TYPE prvSDIOCommand(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
     }
     else if (strcmp(cmd, "-mount") == 0)
     {
-        res = f_mount(1, &fs);
+        res = f_mount(0, &fs);
         if (FR_OK == res)
         {
             sprintf(pcWriteBuffer, "File system mount success!\n");
@@ -598,6 +608,25 @@ portBASE_TYPE prvSDIOCommand(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
     }
     else if (strcmp(cmd, "-fopen") == 0)
     {
+        // Get file name
+        xParameterNumber++;
+        pcParameterString = (int8_t *) FreeRTOS_CLIGetParameter(pcCommandString, /* The command string itself. */
+        xParameterNumber, /* Return the next parameter. */
+        &xParameterStringLength /* Store the parameter string length. */
+        );
+
+        memcpy(filename, pcParameterString, xParameterStringLength);
+        res = f_open(&file, filename, FA_OPEN_ALWAYS | FA_READ);
+
+        if (FR_OK != res)
+        {
+            f_close(&file);
+            sprintf(pcWriteBuffer, "File open failed with status %d\n", res);
+        }
+        else
+        {
+            printf(pcWriteBuffer, "File open success with status %d\n", res);
+        }
         xReturn = pdFALSE;
     }
     else if (strcmp(cmd, "-fclose") == 0)
@@ -612,8 +641,46 @@ portBASE_TYPE prvSDIOCommand(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
         memcpy(filename, pcParameterString, xParameterStringLength);
 
         f_close(&file);
-        sprintf(pcWriteBuffer, "File &s closed\n", filename);
+        sprintf(pcWriteBuffer, "File %s closed\n", filename);
     }
+    else if (strcmp(cmd,"-test") == 0)
+    {
+        res = f_opendir(&dir, path); /* Open the directory */
+        if (res == FR_OK)
+        {
+            sprintf(pcWriteBuffer,"Test dir\n");
+            i = strlen(path);
+            for (;;)
+            {
+                res = f_readdir(&dir, &fno); /* Read a directory item */
+                if (res != FR_OK || fno.fname[0] == 0)
+                    break; /* Break on error or end of dir */
+                if (fno.fname[0] == '.')
+                    continue; /* Ignore dot entry */
+#if _USE_LFN
+                fn = *fno.lfname ? fno.lfname : fno.fname;
+#else
+                fn = fno.fname;
+#endif
+                if (fno.fattrib & AM_DIR)
+                { /* It is a directory */
+                    sprintf(&path[i], "/%s", fn);
+                    path[i] = 0;
+                }
+                else
+                { /* It is a file. */
+                    sprintf(pcWriteBuffer,"%s/%s\n", path, fn);
+                }
+            }
+        }
+        else
+        {
+            sprintf(pcWriteBuffer,"Open dir failed with status %d\n",res);
+        }
+
+        xReturn = pdFALSE;
+    }
+
     //}
 
     return xReturn;

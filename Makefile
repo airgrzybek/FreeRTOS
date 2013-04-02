@@ -94,7 +94,7 @@ CFLAGS += -I ./NorFlash
 CFLAGS += -I ./FSMC
 CFLAGS += -I ./FSMC/fsmc_sram
 CFLAGS += -I ./TouchScreen
-CFLAGS += -I ./FatFs
+CFLAGS += -I ./FatFs_
 CFLAGS += -I ./ADC
 CFLAGS += -I ./RTC
 CFLAGS += -D STM32F10X_HD
@@ -187,11 +187,13 @@ FSMC_SOURCE += ./FSMC/FSMC_config.c
 TOUCH_SOURCE += ./TouchScreen/touch_driver.c
 TOUCH_SOURCE += ./TouchScreen/TouchTask.c
 
-FATFS_SOURCE += ./FatFs/diskio.c
-FATFS_SOURCE += ./FatFs/ff.c
-#FATFS_SOURCE += ./FatFs/sdcard.c
-FATFS_SOURCE += ./FatFs/stm32_sdio_sd.c
-FATFS_SOURCE += ./FatFs/stm32_sdio_low_level.c
+FATFS_SOURCE += ./FatFs_/diskio.c
+FATFS_SOURCE += ./FatFs_/ff.c
+FATFS_SOURCE += ./FatFs_/sdcard.c
+#FATFS_SOURCE += ./FatFs/option/ccsbcs.c
+FATFS_SOURCE += ./FatFs_/ccsbcs.c
+#FATFS_SOURCE += ./FatFs/stm32_sdio_sd.c
+#FATFS_SOURCE += ./FatFs/stm32_sdio_low_level.c
 
 ADC_SOURCE += ./ADC/ADC_Task.c
 RTC_SOURCE += ./RTC/RTC_Task.c

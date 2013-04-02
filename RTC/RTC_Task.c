@@ -37,7 +37,44 @@ portTASK_FUNCTION(RtcTask,parameters)
 
     memset(buff,0x00,20);
 
-    RTC_Config();
+    if (BKP_ReadBackupRegister(BKP_DR1) != 0xA5A5)
+    {
+/*         Backup data register value is not correct or not yet programmed (when
+         the first time the program is executed)
+         RTC Configuration*/
+        RTC_Config();
+
+        BKP_WriteBackupRegister(BKP_DR1, 0xA5A5);
+    }
+    else
+    {
+       //  Check if the Power On Reset flag is set
+      //  if (RCC_GetFlagStatus(RCC_FLAG_PORRST) != RESET)
+      //  {
+      //      printf("\r\n\n Power On Reset occurred....");
+      //  }
+        // Check if the Pin Reset flag is set
+       // else if (RCC_GetFlagStatus(RCC_FLAG_PINRST) != RESET)
+       /// {
+       //     printf("\r\n\n External Reset occurred....");
+       // }
+
+       // printf("\r\n No need to configure RTC....");
+       //  Wait for RTC registers synchronization
+        RTC_WaitForSynchro();
+        /* Enable PWR and BKP clocks */
+        RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
+
+        /* Allow access to BKP Domain */
+        PWR_BackupAccessCmd(ENABLE);
+
+       //  Enable the RTC Second
+        RTC_ITConfig(RTC_IT_SEC, ENABLE);
+       //  Wait until last write operation on RTC registers has finished
+        RTC_WaitForLastTask();
+    }
+
+    //RTC_Config();
 
     while(1)
     {
@@ -102,6 +139,13 @@ void RTC_GetTime(uint32_t * thh,uint32_t * tmm, uint32_t * tss)
        /* Wait until last write operation on RTC registers has finished */
        RTC_WaitForLastTask();
     }
+    else if (time > 0x0001517F)
+    {
+        time = time % 0x0001517F;
+        RTC_SetCounter(time);
+        /* Wait until last write operation on RTC registers has finished */
+        RTC_WaitForLastTask();
+    }
 
     /* Compute  hours */
     *thh = time / 3600;
@@ -113,6 +157,7 @@ void RTC_GetTime(uint32_t * thh,uint32_t * tmm, uint32_t * tss)
 
 void RTC_SetTime(uint32_t thh,uint32_t tmm, uint32_t tss)
 {
+    RTC_WaitForLastTask();
     RTC_SetCounter(3600*thh+60*tmm+tss);
     /* Wait until last write operation on RTC registers has finished */
     RTC_WaitForLastTask();

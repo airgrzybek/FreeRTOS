@@ -26,8 +26,8 @@
 //#include "fsmc_sram.h"
 #include "lcd.h"
 #include "TouchTask.h"
-#include "stm32_sdio_sd.h"
-//#include "sdcard.h"
+//#include "stm32_sdio_sd.h"
+#include "sdcard.h"
 
 /*-----------------------------------------------------------*/
 
@@ -76,7 +76,9 @@ static void prvSetupHardware(void);
 static void InterruptsSetup(void);
 
 
-
+SD_CardInfo SDCardInfo;
+SD_Error Status = SD_OK;
+ErrorStatus HSEStartUpStatus;
 
 int main(void)
 {
@@ -86,6 +88,28 @@ int main(void)
     FSMC_Init();
     delay_us_init();
 
+/*
+
+    -------------------------- SD Init -----------------------------
+     Status = SD_Init();
+
+     if (Status == SD_OK)
+     {
+       ----------------- Read CSD/CID MSD registers ------------------
+       Status = SD_GetCardInfo(&SDCardInfo);
+     }
+
+     if (Status == SD_OK)
+     {
+       ----------------- Select Card --------------------------------
+       Status = SD_SelectDeselect((u32) (SDCardInfo.RCA << 16));
+     }
+
+     if (Status == SD_OK)
+     {
+       Status = SD_EnableWideBusOperation(SDIO_BusWide_4b);
+     }
+*/
 
     vStartConsoleTask();
     vStartLEDFlashTasks(mainFLASH_TASK_PRIORITY);
